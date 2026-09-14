@@ -25,7 +25,7 @@ export CAELESTIA_TEST_LOG="$test_root/toasts.log"
 
 "$bridge" enabled
 [[ $(<"$XDG_RUNTIME_DIR/kibby/touchpad-state") == enabled ]] || fail "enabled state was not persisted"
-[[ $(tail -n 1 "$CAELESTIA_TEST_LOG") == 'shell toaster success Touchpad unlocked The built-in touchpad is enabled touchpad' ]] || fail "enabled toast arguments differ"
+[[ $(tail -n 1 "$CAELESTIA_TEST_LOG") == 'shell toaster success Touchpad unlocked The built-in touchpad is enabled mouse' ]] || fail "enabled toast arguments differ"
 
 line_count=$(wc -l < "$CAELESTIA_TEST_LOG")
 "$bridge" disabled --quiet

@@ -36,5 +36,5 @@ if [[ "$state" == disabled ]]; then
         "Touchpad locked" "The built-in touchpad is disabled" mouse
 else
     "$caelestia_bin" shell toaster success \
-        "Touchpad unlocked" "The built-in touchpad is enabled" touchpad
+        "Touchpad unlocked" "The built-in touchpad is enabled" mouse
 fi
