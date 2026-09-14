@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${WPCTL_TEST_STATE:?WPCTL_TEST_STATE must be set}"
+: "${WPCTL_TEST_LOG:?WPCTL_TEST_LOG must be set}"
+
+printf '%s\n' "$*" >> "$WPCTL_TEST_LOG"
+
+case "$*" in
+    "set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
+        [[ ${WPCTL_TEST_FAIL_SET:-0} != 1 ]] || exit 1
+        if [[ $(<"$WPCTL_TEST_STATE") == muted ]]; then
+            printf 'unmuted\n' > "$WPCTL_TEST_STATE"
+        else
+            printf 'muted\n' > "$WPCTL_TEST_STATE"
+        fi
+        ;;
+    "get-volume @DEFAULT_AUDIO_SOURCE@")
+        if [[ $(<"$WPCTL_TEST_STATE") == muted ]]; then
+            printf 'Volume: 0.74 [MUTED]\n'
+        else
+            printf 'Volume: 0.74\n'
+        fi
+        ;;
+    *)
+        printf 'unexpected wpctl arguments: %s\n' "$*" >&2
+        exit 2
+        ;;
+esac
