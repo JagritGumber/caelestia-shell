@@ -113,7 +113,7 @@ ColumnLayout {
             scale: !Hypr.touchpadEnabled ? 1 : 0.5
             opacity: !Hypr.touchpadEnabled ? 1 : 0
 
-            text: "touchpad_off"
+            text: "mouse"
             color: root.colour
             fill: 1
             grade: 25

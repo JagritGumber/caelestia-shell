@@ -33,7 +33,7 @@ fi
 caelestia_bin=${CAELESTIA_BIN:-caelestia}
 if [[ "$state" == disabled ]]; then
     "$caelestia_bin" shell toaster info \
-        "Touchpad locked" "The built-in touchpad is disabled" touchpad_off
+        "Touchpad locked" "The built-in touchpad is disabled" mouse
 else
     "$caelestia_bin" shell toaster success \
         "Touchpad unlocked" "The built-in touchpad is enabled" touchpad
