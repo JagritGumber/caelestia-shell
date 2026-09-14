@@ -14,4 +14,8 @@ ColumnLayout {
     StyledText {
         text: Hypr.numLock ? Tr.tr("Num lock enabled") : Tr.tr("Num lock disabled")
     }
+
+    StyledText {
+        text: qsTr("Touchpad: %1").arg(Hypr.touchpadEnabled ? "Enabled" : "Disabled")
+    }
 }

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${CAELESTIA_TEST_LOG:?CAELESTIA_TEST_LOG must be set}"
+printf '%s\n' "$*" >> "$CAELESTIA_TEST_LOG"

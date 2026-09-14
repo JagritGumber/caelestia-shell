@@ -36,7 +36,7 @@ StyledRect {
     // Entries that can shrink to nothing, spacing included
     function collapsed(entry: var): bool {
         if (entry.id === "lockStatus")
-            return !Hypr.capsLock && !Hypr.numLock;
+            return !Hypr.capsLock && !Hypr.numLock && Hypr.touchpadEnabled;
         return false;
     }
 

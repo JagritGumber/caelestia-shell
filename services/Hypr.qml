@@ -27,6 +27,7 @@ Singleton {
     readonly property HyprKeyboard keyboard: extras.devices.keyboards.find(kb => kb.main) ?? null
     readonly property bool capsLock: keyboard?.capsLock ?? false
     readonly property bool numLock: keyboard?.numLock ?? false
+    property bool touchpadEnabled: true
     readonly property string defaultKbLayout: keyboard?.layout.split(",")[0] ?? "??"
     readonly property string kbLayoutFull: keyboard?.activeKeymap ?? Tr.trCtx("Unknown", "keyboard layout")
     readonly property string kbLayout: kbMap.get(kbLayoutFull) ?? "??"
@@ -157,6 +158,15 @@ Singleton {
         }
 
         target: root.focusedMonitor
+    }
+
+    FileView {
+        path: `${Quickshell.env("XDG_RUNTIME_DIR")}/kibby/touchpad-state`
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.touchpadEnabled = text().trim() !== "disabled"
+        onLoadFailed: root.touchpadEnabled = true
     }
 
     FileView {
