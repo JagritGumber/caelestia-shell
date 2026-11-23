@@ -70,10 +70,11 @@ Column {
                 return Tr.tr("Calculating remaining battery life...");
             }
 
-            if (dev.timeToFull > 0)
-                return Tr.tr("Time until charged: %1").arg(root.formatSeconds(dev.timeToFull));
+            // Kibby: at 100% UPower can still report a time to full while it trickle-charges.
             if (Math.round(dev.percentage * 100) === 100)
                 return Tr.tr("Fully charged!");
+            if (dev.timeToFull > 0)
+                return Tr.tr("Time until charged: %1").arg(root.formatSeconds(dev.timeToFull));
             return Tr.tr("Calculating time until charged...");
         }
     }
