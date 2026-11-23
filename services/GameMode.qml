@@ -13,6 +13,21 @@ Singleton {
 
     property alias enabled: props.enabled
 
+    function syncIdleInhibitor(): void {
+        if (enabled) {
+            if (!props.idleInhibitorManaged) {
+                props.idleInhibitorWasEnabled = IdleInhibitor.enabled;
+                props.idleInhibitorManaged = true;
+            }
+            IdleInhibitor.enabled = true;
+        } else if (props.idleInhibitorManaged) {
+            const restoreEnabled = props.idleInhibitorWasEnabled;
+            props.idleInhibitorManaged = false;
+            props.idleInhibitorWasEnabled = false;
+            IdleInhibitor.enabled = restoreEnabled;
+        }
+    }
+
     function setDynamicConfs(): void {
         Hypr.extras.applyOptions({
             "animations:enabled": 0,
@@ -27,6 +42,8 @@ Singleton {
     }
 
     onEnabledChanged: {
+        syncIdleInhibitor();
+
         if (enabled) {
             setDynamicConfs();
             if (GlobalConfig.utilities.toasts.gameModeChanged)
@@ -42,8 +59,21 @@ Singleton {
         id: props
 
         property bool enabled: Hypr.options["animations:enabled"] === 0 // qmllint disable missing-property
+        property bool idleInhibitorManaged
+        property bool idleInhibitorWasEnabled
 
         reloadableId: "gameMode"
+    }
+
+    Component.onCompleted: root.syncIdleInhibitor()
+
+    Connections {
+        function onEnabledChanged(): void {
+            if (root.enabled && !IdleInhibitor.enabled)
+                Qt.callLater(() => root.syncIdleInhibitor());
+        }
+
+        target: IdleInhibitor
     }
 
     Connections {

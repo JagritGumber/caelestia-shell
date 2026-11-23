@@ -2,6 +2,7 @@ pragma Singleton
 
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.UPower
 import Quickshell.Wayland
 
 Singleton {
@@ -9,6 +10,7 @@ Singleton {
 
     property alias enabled: props.enabled
     readonly property alias enabledSince: props.enabledSince
+    readonly property bool inhibitLidClose: props.enabled && !UPower.onBattery
 
     onEnabledChanged: {
         if (enabled)
@@ -34,6 +36,13 @@ Singleton {
         }
     }
 
+    Process {
+        id: lidSwitchInhibitor
+
+        running: root.inhibitLidClose
+        command: ["/usr/bin/systemd-inhibit", "--what=handle-lid-switch", "--who=Caelestia", "--why=Keep Awake is enabled while connected to AC power", "--mode=block", "/usr/bin/sleep", "infinity"]
+    }
+
     IpcHandler {
         function isEnabled(): bool {
             return props.enabled;
@@ -49,6 +58,10 @@ Singleton {
 
         function disable(): void {
             props.enabled = false;
+        }
+
+        function isLidCloseInhibited(): bool {
+            return lidSwitchInhibitor.running;
         }
 
         target: "idleInhibitor"
