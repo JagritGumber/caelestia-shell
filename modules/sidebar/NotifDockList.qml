@@ -57,7 +57,7 @@ LazyListView {
             property int startY
 
             function closeAll(): void {
-                clearTimer.start();
+                Notifs.clearApp(notif.modelData);
             }
 
             LazyListView.trackViewport: !notifInner.expanded && notifInner.nonAnimHeight < notifInner.implicitHeight
@@ -96,24 +96,6 @@ LazyListView {
                     x = 0;
                 else
                     closeAll();
-            }
-
-            Timer {
-                id: clearTimer
-
-                interval: 15
-                repeat: true
-                triggeredOnStart: true
-                onTriggered: {
-                    const notifs = Notifs.notClosed.filter(n => n.appName === notif.modelData);
-                    if (notifs.length === 0) {
-                        stop();
-                        return;
-                    }
-
-                    for (const n of notifs.slice(0, 30))
-                        n.close();
-                }
             }
 
             NotifGroup {

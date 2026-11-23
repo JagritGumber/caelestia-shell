@@ -27,7 +27,7 @@ LazyListView {
 
     readyDelay: 1
     cacheBuffer: 400
-    removeDuration: Tokens.anim.durations.normal
+    removeDuration: Notifs.bulkClearing ? 0 : Tokens.anim.durations.normal
 
     useCustomViewport: true
     viewport: {
@@ -103,7 +103,7 @@ LazyListView {
             }
 
             ParallelAnimation {
-                running: notif.modelData?.closed ?? false
+                running: (notif.modelData?.closed ?? false) && !(notif.modelData?.bulkClosing ?? false)
                 onFinished: notif.modelData?.unlock(notif)
 
                 Anim {
@@ -130,22 +130,28 @@ LazyListView {
             }
 
             Behavior on y {
-                enabled: notif.LazyListView.ready
+                enabled: notif.LazyListView.ready && !Notifs.bulkClearing
 
                 Anim {}
             }
 
             Behavior on opacity {
+                enabled: !Notifs.bulkClearing
+
                 Anim {
                     type: Anim.DefaultEffects
                 }
             }
 
             Behavior on scale {
+                enabled: !Notifs.bulkClearing
+
                 Anim {}
             }
 
             Behavior on x {
+                enabled: !Notifs.bulkClearing
+
                 Anim {}
             }
         }

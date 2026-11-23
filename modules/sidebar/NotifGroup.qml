@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import Caelestia.Config
 import qs.components
@@ -21,8 +22,8 @@ StyledRect {
     readonly property list<var> notifs: Notifs.list.filter(n => n.appName === modelData)
     readonly property list<var> activeNotifs: notifs.filter(n => !n.closed)
     readonly property int notifCount: activeNotifs.length
-    readonly property string image: activeNotifs.find(n => n.image.length > 0)?.image ?? ""
-    readonly property string appIcon: activeNotifs.find(n => n.appIcon.length > 0)?.appIcon ?? ""
+    readonly property string image: activeNotifs.find(n => n.image.length > 0 && !n.image.startsWith("image://icon/"))?.image ?? ""
+    readonly property string appIcon: activeNotifs.find(n => n.resolvedAppIcon.length > 0)?.resolvedAppIcon ?? ""
     readonly property int urgency: {
         if (activeNotifs.find(n => n.urgency === NotificationUrgency.Critical))
             return NotificationUrgency.Critical;
@@ -79,10 +80,13 @@ StyledRect {
             implicitWidth: TokenConfig.sizes.notifs.image
             implicitHeight: TokenConfig.sizes.notifs.image
 
-            Component {
-                id: imageComp
+            StyledClippingRect {
+                anchors.fill: parent
+                color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHigh, 3) : Colours.palette.m3secondaryContainer
+                radius: Tokens.rounding.full
 
                 Image {
+                    anchors.fill: parent
                     source: Qt.resolvedUrl(root.image)
                     fillMode: Image.PreserveAspectCrop
                     sourceSize: {
@@ -91,42 +95,23 @@ StyledRect {
                     }
                     cache: false
                     asynchronous: true
-                    width: TokenConfig.sizes.notifs.image
-                    height: TokenConfig.sizes.notifs.image
+                    visible: root.image.length > 0
                 }
-            }
 
-            Component {
-                id: appIconComp
-
-                ColouredIcon {
+                IconImage {
+                    anchors.centerIn: parent
                     implicitSize: Math.round(TokenConfig.sizes.notifs.image * 0.6)
-                    source: Quickshell.iconPath(root.appIcon)
-                    colour: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                    layer.enabled: root.appIcon.endsWith("symbolic")
+                    source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
+                    visible: !root.image && root.appIcon
                 }
-            }
-
-            Component {
-                id: materialIconComp
 
                 MaterialIcon {
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: 1
                     text: Icons.getNotifIcon(root.activeNotifs[0]?.summary, root.urgency)
                     color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     fontStyle: Tokens.font.icon.medium
-                }
-            }
-
-            StyledClippingRect {
-                anchors.fill: parent
-                color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.urgency === NotificationUrgency.Low ? Colours.layer(Colours.palette.m3surfaceContainerHigh, 3) : Colours.palette.m3secondaryContainer
-                radius: Tokens.rounding.full
-
-                Loader {
-                    asynchronous: true
-                    anchors.centerIn: parent
-                    anchors.verticalCenterOffset: sourceComponent === materialIconComp ? 1 : 0
-                    sourceComponent: root.image ? imageComp : root.appIcon ? appIconComp : materialIconComp
+                    visible: !root.image && !root.appIcon
                 }
             }
 
@@ -143,12 +128,10 @@ StyledRect {
                     color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.urgency === NotificationUrgency.Low ? Colours.palette.m3surfaceContainerHigh : Colours.palette.m3secondaryContainer
                     radius: Tokens.rounding.full
 
-                    ColouredIcon {
+                    IconImage {
                         anchors.centerIn: parent
                         implicitSize: Math.round(Tokens.sizes.notifs.badge * 0.6)
-                        source: Quickshell.iconPath(root.appIcon)
-                        colour: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                        layer.enabled: root.appIcon.endsWith("symbolic")
+                        source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
                     }
                 }
             }

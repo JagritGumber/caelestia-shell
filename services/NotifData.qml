@@ -14,6 +14,9 @@ QtObject {
 
     property bool popup
     property bool closed
+    property bool bulkClosing
+    property bool detached
+    property bool finalizing
     property var locks: new Set()
 
     property date time: new Date()
@@ -45,6 +48,7 @@ QtObject {
     property string body
     property string appIcon
     property string appName
+    readonly property string resolvedAppIcon: Notifs.resolveAppIcon(appName, appIcon)
     property string image
     property var hints // Hints are not persisted across restarts
     property real expireTimeout: GlobalConfig.notifs.defaultExpireTimeout
@@ -217,13 +221,33 @@ QtObject {
             close();
     }
 
+    function prepareBulkClose(): void {
+        if (finalizing)
+            return;
+
+        bulkClosing = true;
+        detached = true;
+        closed = true;
+    }
+
+    function finishClose(): void {
+        if (locks.size > 0 || finalizing)
+            return;
+
+        finalizing = true;
+        notification?.dismiss();
+        destroy();
+    }
+
     function close(): void {
         closed = true;
-        if (locks.size === 0 && Notifs.list.includes(this)) {
+        if (locks.size > 0)
+            return;
+
+        if (!detached && Notifs.list.includes(this))
             Notifs.list = Notifs.list.filter(n => n !== this);
-            notification?.dismiss();
-            destroy();
-        }
+
+        finishClose();
     }
 
     Component.onCompleted: {

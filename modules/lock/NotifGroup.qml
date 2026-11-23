@@ -23,10 +23,10 @@ StyledRect {
         let hasCritical = false;
         let hasNormal = false;
         for (const n of notifs) {
-            if (!img && n.image.length > 0)
+            if (!img && n.image.length > 0 && !n.image.startsWith("image://icon/"))
                 img = n.image;
-            if (!icon && n.appIcon.length > 0)
-                icon = n.appIcon;
+            if (!icon && n.resolvedAppIcon.length > 0)
+                icon = n.resolvedAppIcon;
             if (n.urgency === NotificationUrgency.Critical)
                 hasCritical = true;
             else if (n.urgency === NotificationUrgency.Normal)
@@ -87,11 +87,9 @@ StyledRect {
             Component {
                 id: appIconComp
 
-                ColouredIcon {
+                IconImage {
                     implicitSize: Math.round(TokenConfig.sizes.notifs.image * 0.6)
-                    source: Quickshell.iconPath(root.appIcon)
-                    colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                    layer.enabled: root.appIcon.endsWith("symbolic")
+                    source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
                 }
             }
 
@@ -130,12 +128,10 @@ StyledRect {
                     color: root.urgency === "critical" ? Colours.palette.m3error : root.urgency === "low" ? Colours.palette.m3surfaceContainerHighest : Colours.palette.m3secondaryContainer
                     radius: Tokens.rounding.full
 
-                    ColouredIcon {
+                    IconImage {
                         anchors.centerIn: parent
                         implicitSize: Math.round(Tokens.sizes.notifs.badge * 0.6)
-                        source: Quickshell.iconPath(root.appIcon)
-                        colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                        layer.enabled: root.appIcon.endsWith("symbolic")
+                        source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
                     }
                 }
             }

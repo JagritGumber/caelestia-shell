@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Shapes
 import Quickshell
+import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import Caelestia.Components
 import Caelestia.Config
@@ -16,8 +17,8 @@ StyledRect {
     id: root
 
     required property NotifData modelData
-    readonly property bool hasImage: modelData.image.length > 0
-    readonly property bool hasAppIcon: modelData.appIcon.length > 0
+    readonly property bool hasImage: modelData.image.length > 0 && !modelData.image.startsWith("image://icon/")
+    readonly property bool hasAppIcon: modelData.resolvedAppIcon.length > 0
     readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData.body) ? Text.MarkdownText : Text.PlainText
     readonly property int nonAnimHeight: summary.implicitHeight + (root.expanded ? Tokens.spacing.extraSmall * 2 + appName.height + body.height + actions.height + actions.anchors.topMargin : bodyPreview.height) + inner.anchors.margins * 2
     property bool expanded: Config.notifs.openExpanded
@@ -152,36 +153,21 @@ StyledRect {
                     implicitWidth: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
                     implicitHeight: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
 
-                    Loader {
-                        id: icon
-
-                        asynchronous: true
-                        active: root.hasAppIcon
-
+                    IconImage {
                         anchors.centerIn: parent
-
                         width: Math.round(parent.width * 0.6)
                         height: Math.round(parent.width * 0.6)
-
-                        sourceComponent: ColouredIcon {
-                            anchors.fill: parent
-                            source: Quickshell.iconPath(root.modelData.appIcon)
-                            colour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                            layer.enabled: root.modelData.appIcon.endsWith("symbolic")
-                        }
+                        source: root.modelData.resolvedAppIcon.startsWith("file:") ? root.modelData.resolvedAppIcon : Quickshell.iconPath(root.modelData.resolvedAppIcon)
+                        visible: root.hasAppIcon
                     }
 
-                    Loader {
-                        asynchronous: true
-                        active: !root.hasAppIcon
+                    MaterialIcon {
                         anchors.centerIn: parent
                         anchors.verticalCenterOffset: 1
-
-                        sourceComponent: MaterialIcon {
-                            text: Icons.getNotifIcon(root.modelData.summary, root.modelData.urgency)
-                            color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                            fontStyle: Tokens.font.icon.medium
-                        }
+                        text: Icons.getNotifIcon(root.modelData.summary, root.modelData.urgency)
+                        color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
+                        fontStyle: Tokens.font.icon.medium
+                        visible: !root.hasAppIcon
                     }
                 }
             }
@@ -391,10 +377,13 @@ StyledRect {
                 anchors.rightMargin: Tokens.spacing.small
 
                 animate: true
-                textFormat: root.bodyTextFormat
-                text: bodyPreviewMetrics.elidedText
+                textFormat: Text.PlainText
+                text: String(root.modelData.body ?? "").replace(/\s+/g, " ").trim()
                 color: Colours.palette.m3onSurfaceVariant
                 font: Tokens.font.body.small
+                elide: Text.ElideRight
+                maximumLineCount: 1
+                wrapMode: Text.NoWrap
 
                 opacity: root.expanded ? 0 : 1
 
@@ -403,15 +392,6 @@ StyledRect {
                         type: Anim.DefaultEffects
                     }
                 }
-            }
-
-            TextMetrics {
-                id: bodyPreviewMetrics
-
-                text: root.modelData.body
-                font: bodyPreview.font
-                elide: Text.ElideRight
-                elideWidth: bodyPreview.width
             }
 
             StyledText {
