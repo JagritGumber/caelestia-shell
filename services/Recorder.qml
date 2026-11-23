@@ -11,6 +11,7 @@ Singleton {
     readonly property alias paused: props.paused
     readonly property alias elapsed: props.elapsed
     property int refCount: 0
+    property bool selectingRegion
     property bool needsStart
     property list<string> startArgs
     property bool needsStop
@@ -19,11 +20,22 @@ Singleton {
     function start(extraArgs = []): void {
         needsStart = true;
         startArgs = extraArgs;
+        selectingRegion = extraArgs.includes("-r") || extraArgs.includes("-sr");
         checkProc.running = true;
     }
 
     function stop(): void {
         needsStop = true;
+
+        // Region selection keeps the command process alive while `slurp` owns
+        // pointer input. Cancel it first, then reconcile/stop after the command
+        // exits instead of consuming the stop request too early.
+        if (commandProc.running) {
+            if (selectingRegion)
+                Quickshell.execDetached(["pkill", "-x", "slurp"]);
+            return;
+        }
+
         checkProc.running = true;
     }
 
@@ -51,14 +63,14 @@ Singleton {
             const running = code === 0;
 
             if (running && root.needsStop) {
-                commandProc.exec(["caelestia", "record"]);
+                commandProc.exec(["caelestia-recorder", "stop"]);
                 props.running = false;
                 props.paused = false;
             } else if (running && root.needsPause) {
-                commandProc.exec(["caelestia", "record", "-p"]);
+                commandProc.exec(["caelestia-recorder", "pause"]);
                 props.paused = !props.paused;
             } else if (!running && root.needsStart) {
-                commandProc.exec(["caelestia", "record", ...root.startArgs]);
+                commandProc.exec(["caelestia-recorder", "start", ...root.startArgs]);
                 props.running = true;
                 props.paused = false;
                 props.elapsed = 0;
@@ -82,7 +94,10 @@ Singleton {
         // The command owns the transition: `caelestia record` blocks on slurp for
         // region captures, and waits for the recorder to finalise the file when
         // stopping. Reconcile once it has actually finished.
-        onExited: checkProc.running = true // qmllint disable signal-handler-parameters
+        onExited: { // qmllint disable signal-handler-parameters
+            root.selectingRegion = false;
+            checkProc.running = true;
+        }
     }
 
     // Only poll while something is showing the state, i.e. the utilities drawer is open

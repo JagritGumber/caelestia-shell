@@ -15,7 +15,17 @@ StyledRect {
 
     required property var props
     required property ScreenState screenState
+    property list<string> pendingRegionArgs
     readonly property real nonAnimHeight: btnLayout.implicitHeight + listOrControls.implicitHeight + layout.spacing + layout.anchors.margins * 2
+
+    function startRegion(args: list<string>): void {
+        // The utilities/sidebar layers otherwise retain pointer input above
+        // slurp, making the region selector appear frozen.
+        screenState.utilities = false;
+        screenState.sidebar = false;
+        pendingRegionArgs = args;
+        regionStartTimer.restart();
+    }
 
     implicitHeight: layout.implicitHeight + layout.anchors.margins * 2
 
@@ -24,6 +34,13 @@ StyledRect {
 
     Ref {
         service: Recorder
+    }
+
+    Timer {
+        id: regionStartTimer
+
+        interval: 250
+        onTriggered: Recorder.start(root.pendingRegionArgs)
     }
 
     ColumnLayout {
@@ -97,7 +114,7 @@ StyledRect {
                         icon: "screenshot_region"
                         text: Tr.tr("Record region")
                         activeText: Tr.trCtx("Region", "recording mode")
-                        onClicked: Recorder.start(["-r"])
+                        onClicked: root.startRegion(["-r"])
                     },
                     MenuItem {
                         icon: "select_to_speak"
@@ -109,7 +126,7 @@ StyledRect {
                         icon: "volume_up"
                         text: Tr.tr("Record region with sound")
                         activeText: Tr.trCtx("Region", "recording mode")
-                        onClicked: Recorder.start(["-sr"])
+                        onClicked: root.startRegion(["-sr"])
                     }
                 ]
             }
