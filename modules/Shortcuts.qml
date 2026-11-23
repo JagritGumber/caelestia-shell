@@ -157,6 +157,29 @@ Scope {
         target: "drawers"
     }
 
+    // The dashboard on a given tab: dashboard, media, mixer, performance or
+    // weather. For example `qs -c caelestia ipc call dashboard toggle mixer`.
+    IpcHandler {
+        function open(tab: string): void {
+            if (root.hasFullscreen)
+                return;
+            const screenState = ShellState.forActive();
+            screenState.dashboardTabRequest = tab.trim().toLowerCase();
+            screenState.dashboard = true;
+        }
+
+        // Closes the dashboard when it already shows that tab.
+        function toggle(tab: string): void {
+            const screenState = ShellState.forActive();
+            if (screenState.dashboard && screenState.dashboardTabId === tab.trim().toLowerCase())
+                screenState.dashboard = false;
+            else
+                open(tab);
+        }
+
+        target: "dashboard"
+    }
+
     IpcHandler {
         function open(): void {
             WindowFactory.create();

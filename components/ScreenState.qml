@@ -14,5 +14,7 @@ PersistentProperties {
 
     // Dashboard state
     property int dashboardTab
+    property string dashboardTabId // the current tab's id, e.g. "mixer"
+    property string dashboardTabRequest // set to an id to switch to that tab
     property date dashboardDate: new Date()
 }

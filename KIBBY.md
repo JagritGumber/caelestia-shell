@@ -15,6 +15,7 @@ This is a fork of [caelestia-dots/shell](https://github.com/caelestia-dots/shell
 - **System alerts:** memory and battery alerts, shown even over fullscreen windows.
 - **Notifications:** app icons, tidier groups, and an alert sound for chosen apps. A notification with no usable icon of its own shows the distro logo the bar uses, never a broken image.
 - **Profile picture:** a cropper for it in the dashboard.
+- **Mixer:** a dashboard tab after Media. It has the output and the input, each with its device, volume and mute (plus a live level for the microphone), and every app that is playing or recording, each with its own volume and mute. `qs -c caelestia ipc call dashboard toggle mixer` opens the dashboard on it, and `dashboard open <tab>` opens any tab.
 - **Launcher:** theme icons for apps, and a wallpapers shortcut that opens the wallpaper carousel.
 - **Recording:** region recording hands the pointer to slurp, and runs through Kibby's `caelestia-recorder`.
 - **Keep Awake:** on AC power it also stops lid close from suspending. Game mode keeps the screen awake.

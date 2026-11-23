@@ -20,24 +20,35 @@ Item {
         const allTabs = [
             {
                 component: dashComponent,
+                id: "dashboard",
                 iconName: "dashboard",
                 text: Tr.tr("Dashboard"),
                 enabled: Config.dashboard.showDashboard
             },
             {
                 component: mediaComponent,
+                id: "media",
                 iconName: "queue_music",
                 text: Tr.tr("Media"),
                 enabled: Config.dashboard.showMedia
             },
             {
+                component: mixerComponent,
+                id: "mixer",
+                iconName: "tune",
+                text: Tr.tr("Mixer"),
+                enabled: true
+            },
+            {
                 component: performanceComponent,
+                id: "performance",
                 iconName: "speed",
                 text: Tr.tr("Performance"),
                 enabled: Config.dashboard.showPerformance
             },
             {
                 component: weatherComponent,
+                id: "weather",
                 iconName: "cloud",
                 text: Tr.tr("Weather"),
                 enabled: Config.dashboard.showWeather
@@ -49,8 +60,36 @@ Item {
     readonly property real nonAnimWidth: view.implicitWidth + viewWrapper.anchors.margins * 2
     readonly property real nonAnimHeight: tabs.implicitHeight + tabs.anchors.topMargin + view.implicitHeight + viewWrapper.anchors.margins * 2
 
+    // The dashboard IPC target asks for a tab by its id (ScreenState.dashboardTabRequest).
+    function applyTabRequest(): void {
+        const request = screenState.dashboardTabRequest;
+        if (!request)
+            return;
+        const index = dashboardTabs.findIndex(tab => tab.id === request);
+        if (index >= 0)
+            screenState.dashboardTab = index;
+        screenState.dashboardTabRequest = "";
+    }
+
     implicitWidth: nonAnimWidth
     implicitHeight: nonAnimHeight
+
+    // Applied once the tab loaders exist.
+    Component.onCompleted: Qt.callLater(applyTabRequest)
+
+    Connections {
+        function onDashboardTabRequestChanged(): void {
+            Qt.callLater(root.applyTabRequest);
+        }
+
+        target: root.screenState
+    }
+
+    Binding {
+        target: root.screenState
+        property: "dashboardTabId"
+        value: root.dashboardTabs[root.screenState.dashboardTab]?.id ?? ""
+    }
 
     Tabs {
         id: tabs
@@ -168,6 +207,12 @@ Item {
                 Media {
                     screenState: root.screenState
                 }
+            }
+
+            Component {
+                id: mixerComponent
+
+                Mixer {}
             }
 
             Component {
