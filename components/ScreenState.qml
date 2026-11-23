@@ -14,7 +14,6 @@ PersistentProperties {
 
     // Dashboard state
     property int dashboardTab
-    property string dashboardTabId // the current tab's id, e.g. "mixer"
-    property string dashboardTabRequest // set to an id to switch to that tab
+    property string osdMixer // "output" or "input": the OSD's per-app mixer is open
     property date dashboardDate: new Date()
 }

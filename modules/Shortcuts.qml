@@ -157,27 +157,26 @@ Scope {
         target: "drawers"
     }
 
-    // The dashboard on a given tab: dashboard, media, mixer, performance or
-    // weather. For example `qs -c caelestia ipc call dashboard toggle mixer`.
+    // The OSD with its per-app mixer open: `qs -c caelestia ipc call osd mixer`
+    // (apps playing, beside the volume) or `osd micMixer` (apps recording).
+    // Called again, it closes. It closes by itself after 4 s if the pointer
+    // does not come to it.
     IpcHandler {
-        function open(tab: string): void {
-            if (root.hasFullscreen)
-                return;
+        function mixer(): void {
             const screenState = ShellState.forActive();
-            screenState.dashboardTabRequest = tab.trim().toLowerCase();
-            screenState.dashboard = true;
+            const open = screenState.osd && screenState.osdMixer === "output";
+            screenState.osdMixer = open ? "" : "output";
+            screenState.osd = !open;
         }
 
-        // Closes the dashboard when it already shows that tab.
-        function toggle(tab: string): void {
+        function micMixer(): void {
             const screenState = ShellState.forActive();
-            if (screenState.dashboard && screenState.dashboardTabId === tab.trim().toLowerCase())
-                screenState.dashboard = false;
-            else
-                open(tab);
+            const open = screenState.osd && screenState.osdMixer === "input";
+            screenState.osdMixer = open ? "" : "input";
+            screenState.osd = !open;
         }
 
-        target: "dashboard"
+        target: "osd"
     }
 
     IpcHandler {

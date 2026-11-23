@@ -72,6 +72,16 @@ Item {
         target: Audio
     }
 
+    // The mixer closes with the OSD.
+    Connections {
+        function onOsdChanged(): void {
+            if (!root.screenState.osd)
+                root.screenState.osdMixer = "";
+        }
+
+        target: root.screenState
+    }
+
     Connections {
         function onBrightnessChanged(): void {
             root.show();
