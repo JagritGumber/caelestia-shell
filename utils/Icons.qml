@@ -8,6 +8,20 @@ import Caelestia.Config
 Singleton {
     id: root
 
+    readonly property var directAppIcons: ({
+            "com.teamviewer.teamviewer": "file:///usr/share/icons/hicolor/scalable/apps/TeamViewer.svg",
+            "com.visualstudio.code": "file:///var/lib/flatpak/exports/share/icons/hicolor/512x512/apps/com.visualstudio.code.png",
+            "grok-bot": `file://${Paths.home}/.local/share/icons/hicolor/512x512/apps/grok-bot.png`,
+            "helium": "file:///usr/share/pixmaps/helium-browser.png",
+            "orca": `file://${Paths.home}/.local/share/icons/hicolor/512x512/apps/orca-ide.png`,
+            "orca-ide": `file://${Paths.home}/.local/share/icons/hicolor/512x512/apps/orca-ide.png`,
+            "org.blender.blender": "file:///var/lib/flatpak/exports/share/icons/hicolor/scalable/apps/org.blender.Blender.svg",
+            "org.kde.kate": "file:///usr/share/icons/hicolor/scalable/apps/kate.svg",
+            "slack": "file:///usr/share/pixmaps/slack.png",
+            "teamviewer": "file:///usr/share/icons/hicolor/scalable/apps/TeamViewer.svg",
+            "wispr-flow": "file:///usr/share/icons/hicolor/scalable/apps/wispr-flow.svg"
+        })
+
     readonly property var weatherIcons: ({
             "0": "clear_day",
             "1": "clear_day",
@@ -141,10 +155,25 @@ Singleton {
     }
 
     function getAppIcon(name: string, fallback: string): string {
-        const icon = DesktopEntries.heuristicLookup(name)?.icon;
-        if (fallback !== "undefined")
+        const needle = name.trim().toLowerCase();
+        const directIcon = getDirectAppIcon(needle);
+        if (directIcon)
+            return directIcon;
+
+        const exactEntry = DesktopEntries.applications.values.find(app => {
+            const id = String(app.id ?? "").toLowerCase().replace(/\.desktop$/, "");
+            const appName = String(app.name ?? "").trim().toLowerCase();
+            const startupClass = String(app.startupClass ?? "").trim().toLowerCase();
+            return needle === id || needle === appName || needle === startupClass;
+        });
+        const icon = exactEntry?.icon ?? DesktopEntries.heuristicLookup(name)?.icon;
+        if (icon)
             return Quickshell.iconPath(icon, fallback);
-        return Quickshell.iconPath(icon);
+        return fallback && fallback !== "undefined" ? Quickshell.iconPath(fallback) : "";
+    }
+
+    function getDirectAppIcon(name: string): string {
+        return directAppIcons[name.trim().toLowerCase()] ?? "";
     }
 
     function getAppCategoryIcon(name: string, fallback: string): string {

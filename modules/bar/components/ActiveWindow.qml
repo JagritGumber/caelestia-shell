@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import Caelestia.Config
 import Caelestia.I18n
 import qs.components
@@ -36,8 +37,8 @@ Item {
     property Title current: text1
 
     clip: true
-    implicitWidth: Math.max(icon.implicitWidth, current.implicitHeight)
-    implicitHeight: icon.implicitHeight + current.implicitWidth + current.anchors.topMargin
+    implicitWidth: Math.max(icon.width, current.implicitHeight)
+    implicitHeight: icon.height + current.implicitWidth + current.anchors.topMargin
 
     Loader {
         asynchronous: true
@@ -65,14 +66,14 @@ Item {
         }
     }
 
-    MaterialIcon {
+    IconImage {
         id: icon
 
         anchors.horizontalCenter: parent.horizontalCenter
 
-        animate: true
-        text: Icons.getAppCategoryIcon(Hypr.activeToplevel?.lastIpcObject.class, "desktop_windows")
-        color: root.colour
+        width: Math.round(Tokens.sizes.bar.innerWidth * 0.55)
+        height: width
+        source: Icons.getAppIcon(Hypr.activeToplevel?.lastIpcObject.class ?? "", "image-missing")
     }
 
     Title {

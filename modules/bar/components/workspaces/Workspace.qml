@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import M3Shapes
 import Caelestia.Components
 import Caelestia.Config
@@ -31,6 +32,11 @@ Item {
     readonly property bool isOccupied: toplevels.length > 0
     readonly property bool hasWindows: isOccupied && showWindows && Config.bar.workspaces.maxWindowIcons > 0
     readonly property bool focused: activeWsId === ws
+    // Kibby: the ActiveIndicator no longer recolours what it covers (that
+    // would flatten the app icons), so focused glyphs pick a colour that reads
+    // on the indicator. onSurface vanishes whenever the indicator is close to it.
+    property color indicatorColour: Colours.palette.m3primary
+    readonly property color glyphColor: focused && Config.bar.workspaces.activeIndicator ? Colours.on(indicatorColour) : fgColour
     readonly property list<int> focusedShapeList: [MaterialShape.Slanted, MaterialShape.Oval, MaterialShape.Pill, MaterialShape.Triangle, MaterialShape.Arrow, MaterialShape.Diamond, MaterialShape.Pentagon, MaterialShape.Gem, MaterialShape.VerySunny, MaterialShape.Sunny, MaterialShape.Cookie4Sided, MaterialShape.Cookie6Sided, MaterialShape.Cookie7Sided, MaterialShape.Cookie9Sided, MaterialShape.Cookie12Sided, MaterialShape.Clover4Leaf, MaterialShape.SoftBurst, MaterialShape.Ghostish]
 
     property color offMonitorColour: Colours.palette.m3outlineVariant
@@ -90,7 +96,7 @@ Item {
         MaterialShape {
             implicitSize: Tokens.sizes.bar.innerWidth - Tokens.padding.small
 
-            color: root.fgColour
+            color: root.glyphColor
             scale: root.focused ? 2 / 3 : root.isOccupied ? 1 / 3 : 1 / 4
 
             animationEasing: Tokens.anim.expressiveDefaultSpatial
@@ -138,7 +144,7 @@ Item {
                     return String(wsName).toLowerCase();
                 return wsName;
             }
-            color: root.fgColour
+            color: root.glyphColor
             verticalAlignment: Qt.AlignVCenter
             font.family: Tokens.font.workspaces
         }
@@ -151,7 +157,7 @@ Item {
             fill: 1
             grade: 25
             text: iconCacher.icon
-            color: root.fgColour
+            color: root.glyphColor
             verticalAlignment: Qt.AlignVCenter
 
             WsIconCacher {
@@ -220,18 +226,18 @@ Item {
                     }
                 }
 
-                delegate: MaterialIcon {
+                delegate: IconImage {
                     id: win
 
                     required property var modelData
                     required property int index // Needed, LazyListView will fail to set it if it doesn't exist
 
-                    grade: 0
-                    horizontalAlignment: Text.AlignHCenter
-                    text: Icons.getAppCategoryIcon(modelData.lastIpcObject.class, "terminal")
-                    color: root.onOtherMonitor ? root.offMonitorColour : Colours.palette.m3onSurfaceVariant
+                    // Kibby: the app's own icon rather than a category glyph.
+                    anchors.horizontalCenter: parent?.horizontalCenter
+                    implicitSize: Math.round(root.Tokens.sizes.bar.innerWidth * 0.55)
+                    source: Icons.getAppIcon(modelData.lastIpcObject.class, "image-missing")
 
-                    opacity: LazyListView.adding || LazyListView.removing ? 0 : 1
+                    opacity: LazyListView.adding || LazyListView.removing ? 0 : root.onOtherMonitor ? 0.5 : 1
 
                     Behavior on opacity {
                         Anim {

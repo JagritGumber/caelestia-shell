@@ -163,6 +163,7 @@ Item {
 
         delegate: Workspace {
             activeWsId: root.activeSpecialId
+            indicatorColour: Colours.palette.m3tertiary
             ws: modelData
             monitor: root.monitor
             offMonitorColour: Colours.palette.m3outline
@@ -187,12 +188,12 @@ Item {
         anchors.left: view.left
         anchors.right: view.right
         active: Config.bar.workspaces.activeIndicator
+        z: -1
 
         sourceComponent: ActiveIndicator {
             activeWs: root.activeWs
             mask: view
             color: Colours.palette.m3tertiary
-            contentColour: Colours.palette.m3onTertiary
         }
     }
 

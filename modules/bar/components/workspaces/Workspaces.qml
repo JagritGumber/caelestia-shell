@@ -159,6 +159,7 @@ StyledClippingRect {
             anchors.left: workspaces.left
             anchors.right: workspaces.right
             active: Config.bar.workspaces.activeIndicator
+            z: -1
 
             sourceComponent: ActiveIndicator {
                 activeWs: {
