@@ -6,6 +6,7 @@ import qs.components
 import qs.components.controls
 import qs.modules.bar as Bar
 import qs.modules.bar.popouts as BarPopouts
+import "../bar/TrayIntent.js" as TrayIntent
 
 CustomMouseArea {
     id: root
@@ -22,6 +23,72 @@ CustomMouseArea {
     property bool dashboardShortcutActive
     property bool osdShortcutActive
     property bool utilitiesShortcutActive
+    property point previousPointer: Qt.point(-1, -1)
+    property double previousPointerTime
+    property point trayAimOrigin: Qt.point(-1, -1)
+    property string trayAimMenuName
+    property real pendingPopoutY: -1
+    property string pendingPopoutName
+
+    function cancelPendingPopout(): void {
+        hoverIntentTimer.stop();
+        pendingPopoutY = -1;
+        pendingPopoutName = "";
+    }
+
+    function scheduleHoveredPopout(y: real, name: string, delay: int): void {
+        if (!name) {
+            cancelPendingPopout();
+            return;
+        }
+
+        const candidateChanged = pendingPopoutName !== name;
+        pendingPopoutY = y;
+        pendingPopoutName = name;
+        hoverIntentTimer.interval = delay;
+        if (candidateChanged || !hoverIntentTimer.running)
+            hoverIntentTimer.restart();
+    }
+
+    function activateHoveredPopout(y: real): void {
+        cancelPendingPopout();
+        bar.checkPopout(y);
+        if (popouts.hasCurrent && TrayIntent.isTrayMenu(popouts.currentName) && popouts.currentName !== trayAimMenuName) {
+            trayAimMenuName = popouts.currentName;
+            trayAimOrigin = Qt.point(mouseX, mouseY);
+        }
+    }
+
+    function considerHoveredPopout(y: real, pointer: point, elapsedMs: real): void {
+        const candidate = bar.popoutNameAt(y);
+        if (!candidate || candidate === popouts.currentName || !TrayIntent.shouldDelayActivation(previousPointer, pointer, elapsedMs)) {
+            activateHoveredPopout(y);
+            return;
+        }
+
+        scheduleHoveredPopout(y, candidate, 70);
+    }
+
+    function considerCorridorSwitch(y: real): void {
+        const candidate = bar.popoutNameAt(y);
+        if (TrayIntent.shouldQueueCorridorSwitch(popouts.currentName, candidate, true))
+            scheduleHoveredPopout(y, candidate, 180);
+        else
+            cancelPendingPopout();
+    }
+
+    function inTrayAimCorridor(pointer: point): bool {
+        return popouts.hasCurrent && TrayIntent.shouldPreserveOpenMenu(popouts.currentName, trayAimMenuName, trayAimOrigin, pointer, {
+            left: bar.implicitWidth + panels.popoutsWrapper.x,
+            top: borderThickness + panels.popoutsWrapper.y,
+            bottom: borderThickness + panels.popoutsWrapper.y + panels.popoutsWrapper.height
+        });
+    }
+
+    function closeTransientPopout(): void {
+        popouts.hasCurrent = false;
+        bar.closeTray();
+    }
 
     function withinPanelHeight(panel: Item, x: real, y: real): bool {
         const panelY = root.borderThickness + panel.y;
@@ -63,32 +130,60 @@ CustomMouseArea {
     acceptedButtons: fullscreen ? Qt.NoButton : Qt.AllButtons
     hoverEnabled: true
 
+    Timer {
+        id: hoverIntentTimer
+
+        interval: 70
+        onTriggered: {
+            if (root.pendingPopoutY >= 0
+                    && root.mouseX < root.bar.implicitWidth
+                    && root.bar.popoutNameAt(root.pendingPopoutY) === root.pendingPopoutName)
+                root.activateHoveredPopout(root.pendingPopoutY);
+            else
+                root.cancelPendingPopout();
+        }
+    }
+
+    Timer {
+        id: trayLeaveTimer
+
+        interval: 140
+        onTriggered: {
+            if (!root.containsMouse)
+                root.closeTransientPopout();
+        }
+    }
+
     onPressed: event => dragStart = Qt.point(event.x, event.y)
     onContainsMouseChanged: {
-        if (!containsMouse) {
-            // Only hide if not activated by shortcut
-            if (!osdShortcutActive) {
-                screenState.osd = false;
-                root.panels.osd.hovered = false;
-            }
-
-            if (!dashboardShortcutActive)
-                screenState.dashboard = false;
-
-            if (!utilitiesShortcutActive)
-                screenState.utilities = false;
-
-            if (!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) {
-                popouts.hasCurrent = false;
-                bar.closeTray();
-            }
-
-            if (Config.bar.showOnHover)
-                bar.isHovered = false;
-
-            if (Config.sidebar.showOnHover)
-                screenState.sidebar = false;
+        if (containsMouse) {
+            trayLeaveTimer.stop();
+            return;
         }
+
+        // Only hide if not activated by shortcut
+        if (!osdShortcutActive) {
+            screenState.osd = false;
+            root.panels.osd.hovered = false;
+        }
+
+        if (!dashboardShortcutActive)
+            screenState.dashboard = false;
+
+        if (!utilitiesShortcutActive)
+            screenState.utilities = false;
+
+        const menuDepth = (popouts.current as StackView)?.depth ?? 0;
+        if (TrayIntent.shouldDeferLeave(popouts.hasCurrent, popouts.currentName, menuDepth))
+            trayLeaveTimer.restart();
+        else if (!TrayIntent.isTrayMenu(popouts.currentName) || menuDepth <= 1)
+            closeTransientPopout();
+
+        if (Config.bar.showOnHover)
+            bar.isHovered = false;
+
+        if (Config.sidebar.showOnHover)
+            screenState.sidebar = false;
     }
 
     onPositionChanged: event => {
@@ -97,6 +192,9 @@ CustomMouseArea {
 
         const x = event.x;
         const y = event.y;
+        const pointer = Qt.point(x, y);
+        const now = Date.now();
+        const elapsedMs = previousPointerTime > 0 ? now - previousPointerTime : 0;
         const dragX = x - dragStart.x;
         const dragY = y - dragStart.y;
 
@@ -238,12 +336,20 @@ CustomMouseArea {
         }
 
         // Show popouts on hover
-        if (x < bar.implicitWidth) {
-            bar.checkPopout(y);
-        } else if ((!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) && !inLeftPanel(panels.popoutsWrapper, x, y)) {
-            popouts.hasCurrent = false;
-            bar.closeTray();
+        if (inTrayAimCorridor(pointer)) {
+            if (x < bar.implicitWidth)
+                considerCorridorSwitch(y);
+            else
+                cancelPendingPopout();
+        } else if (x < bar.implicitWidth) {
+            considerHoveredPopout(y, pointer, elapsedMs);
+        } else if ((!TrayIntent.isTrayMenu(popouts.currentName) || ((popouts.current as StackView)?.depth ?? 0) <= 1) && !inLeftPanel(panels.popoutsWrapper, x, y) && !inTrayAimCorridor(pointer)) {
+            cancelPendingPopout();
+            closeTransientPopout();
         }
+
+        previousPointer = pointer;
+        previousPointerTime = now;
     }
 
     // Monitor individual visibility changes

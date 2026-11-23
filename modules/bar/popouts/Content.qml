@@ -7,6 +7,7 @@ import Quickshell.Services.SystemTray
 import Caelestia.Config
 import qs.components
 import qs.services
+import "../TrayIntent.js" as TrayIntent
 
 Item {
     id: root
@@ -134,7 +135,7 @@ Item {
 
                 required property SystemTrayItem modelData
 
-                name: `traymenu${root.trayItemsToIndices[modelData.id]}`
+                name: TrayIntent.menuName(modelData.id)
                 sourceComponent: trayMenuComp
 
                 Connections {

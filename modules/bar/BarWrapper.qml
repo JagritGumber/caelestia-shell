@@ -32,6 +32,10 @@ Item {
         (content.item as Bar)?.checkPopout(y);
     }
 
+    function popoutNameAt(y: real): string {
+        return (content.item as Bar)?.popoutNameAt(y) ?? "";
+    }
+
     function handleWheel(y: real, angleDelta: point): void {
         (content.item as Bar)?.handleWheel(y, angleDelta);
     }

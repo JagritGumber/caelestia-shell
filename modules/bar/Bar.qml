@@ -9,6 +9,7 @@ import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.services
+import "TrayIntent.js" as TrayIntent
 
 ColumnLayout {
     id: root
@@ -28,6 +29,35 @@ ColumnLayout {
             if (tray)
                 tray.expanded = false;
         }
+    }
+
+    function popoutNameAt(y: real): string {
+        const ch = childAt(width / 2, y) as EntryWrapper;
+        if (!ch)
+            return "";
+
+        const id = ch.entryId;
+        const top = ch.y;
+
+        if (id === "statusIcons" && Config.bar.popouts.statusIcons) {
+            const items = (ch.item as StatusIcons).items;
+            return items.childAt(items.width / 2, mapToItem(items, 0, y).y)?.name ?? "";
+        }
+
+        if (id === "tray" && Config.bar.popouts.tray) {
+            const tray = ch.item as Tray;
+            if (Config.bar.tray.compact && (!tray.expanded || tray.expandIcon.contains(mapToItem(tray.expandIcon, tray.implicitWidth / 2, y))))
+                return "";
+
+            const index = Math.floor(((y - top - tray.padding * 2 + tray.spacing) / tray.layout.implicitHeight) * tray.items.count);
+            const trayItem = tray.items.itemAt(index);
+            return trayItem ? TrayIntent.menuName(trayItem.modelData.id) : "";
+        }
+
+        if (id === "activeWindow" && Config.bar.popouts.activeWindow && Config.bar.activeWindow.showOnHover)
+            return id.toLowerCase();
+
+        return "";
     }
 
     function checkPopout(y: real): void {
@@ -58,7 +88,7 @@ ColumnLayout {
                 const index = Math.floor(((y - top - tray.padding * 2 + tray.spacing) / tray.layout.implicitHeight) * tray.items.count);
                 const trayItem = tray.items.itemAt(index);
                 if (trayItem) {
-                    popouts.currentName = `traymenu${index}`;
+                    popouts.currentName = TrayIntent.menuName(trayItem.modelData.id);
                     popouts.currentCenter = Qt.binding(() => trayItem.mapToItem(root, 0, trayItem.implicitHeight / 2).y);
                     popouts.hasCurrent = true;
                 } else {
