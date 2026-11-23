@@ -16,6 +16,10 @@ Searcher {
         return search.slice(GlobalConfig.launcher.actionPrefix.length);
     }
 
+    // What the launcher's search opens with next time, e.g. ">wallpaper " from
+    // the wallpapers shortcut. The launcher takes it and clears it.
+    property string pendingSearch
+
     list: variants.instances
     useFuzzy: GlobalConfig.launcher.useFuzzy.actions
 

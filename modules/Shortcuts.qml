@@ -2,9 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Caelestia
+import Caelestia.Config
 import qs.components.misc
 import qs.services
 import qs.modules.nexus
+import qs.modules.launcher.services
 
 Scope {
     id: root
@@ -71,6 +73,26 @@ Scope {
                 screenState.launcher = !screenState.launcher;
             }
             root.launcherInterrupted = false;
+        }
+    }
+
+    // The launcher opened straight on the wallpaper carousel (Hyprland binds
+    // it to Super+Shift+W); pressed again, it closes.
+    // qmllint disable unresolved-type
+    CustomShortcut {
+        // qmllint enable unresolved-type
+        name: "wallpapers"
+        description: "Open the wallpaper switcher"
+        onPressed: {
+            if (root.hasFullscreen)
+                return;
+            const screenState = ShellState.forActive();
+            if (screenState.launcher) {
+                screenState.launcher = false;
+                return;
+            }
+            Actions.pendingSearch = `${GlobalConfig.launcher.actionPrefix}wallpaper `;
+            screenState.launcher = true;
         }
     }
 

@@ -95,6 +95,7 @@ PathView {
         }
     }
 
+    // No buttons, so clicks still reach the wallpapers themselves.
     CustomMouseArea {
         function onWheel(event: WheelEvent): void {
             if (event.angleDelta.y > 0)
@@ -104,5 +105,6 @@ PathView {
         }
 
         anchors.fill: parent
+        acceptedButtons: Qt.NoButton
     }
 }

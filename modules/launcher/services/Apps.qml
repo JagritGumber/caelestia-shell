@@ -8,6 +8,21 @@ import qs.utils
 Searcher {
     id: root
 
+    property var resolvedIcons: ({})
+
+    function resolvedIcon(name: string): string {
+        return resolvedIcons[name] ?? "";
+    }
+
+    function rememberIcon(name: string, path: string): void {
+        if (!name || !path)
+            return;
+
+        const icons = Object.assign({}, resolvedIcons);
+        icons[name] = path.startsWith("/") ? `file://${path}` : path;
+        resolvedIcons = icons;
+    }
+
     function launch(entry: DesktopEntry): void {
         appDb.incrementFrequency(entry.id);
 

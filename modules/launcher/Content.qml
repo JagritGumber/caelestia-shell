@@ -19,6 +19,14 @@ Item {
     readonly property int padding: Tokens.padding.large
     readonly property int rounding: Tokens.rounding.extraLarge
 
+    // Opens on what a shortcut asked for (Actions.pendingSearch), once.
+    function takePendingSearch(): void {
+        if (root.screenState.launcher && Actions.pendingSearch !== "") {
+            search.text = Actions.pendingSearch;
+            Actions.pendingSearch = "";
+        }
+    }
+
     implicitWidth: listWrapper.width + padding * 2
     implicitHeight: search.height + listWrapper.height + padding + search.anchors.bottomMargin
 
@@ -107,12 +115,17 @@ Item {
             }
         }
 
-        Component.onCompleted: forceActiveFocus()
+        Component.onCompleted: {
+            forceActiveFocus();
+            root.takePendingSearch();
+        }
 
         Connections {
             function onLauncherChanged(): void {
                 if (!root.screenState.launcher)
                     search.text = "";
+                else
+                    root.takePendingSearch();
             }
 
             function onSessionChanged(): void {
@@ -121,6 +134,14 @@ Item {
             }
 
             target: root.screenState
+        }
+
+        Connections {
+            function onPendingSearchChanged(): void {
+                root.takePendingSearch();
+            }
+
+            target: Actions
         }
     }
 }

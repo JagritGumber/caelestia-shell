@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Widgets
 import Caelestia.Config
 import qs.components
@@ -12,6 +13,9 @@ Item {
 
     required property DesktopEntry modelData
     required property ScreenState screenState
+
+    readonly property string directIcon: Icons.getDirectAppIcon(modelData?.id ?? "")
+    readonly property string resolvedIcon: directIcon || Apps.resolvedIcon(modelData?.icon ?? "")
 
     implicitHeight: Tokens.sizes.launcher.itemHeight
 
@@ -36,10 +40,22 @@ Item {
             id: icon
 
             asynchronous: true
-            source: Quickshell.iconPath(root.modelData?.icon, "image-missing")
+            source: root.resolvedIcon || Quickshell.iconPath(root.modelData?.icon, "image-missing")
             implicitSize: parent.height * 0.8
 
             anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Process {
+            running: root.modelData && !root.resolvedIcon
+            command: [`${Quickshell.shellDir}/assets/resolve_app_icon.sh`, root.modelData?.icon ?? ""]
+
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    const [name, path] = text.trim().split("\t", 2);
+                    Apps.rememberIcon(name ?? "", path ?? "");
+                }
+            }
         }
 
         Item {
