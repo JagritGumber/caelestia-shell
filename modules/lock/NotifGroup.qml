@@ -38,7 +38,9 @@ StyledRect {
             urgency: hasCritical ? "critical" : hasNormal ? "normal" : "low"
         };
     }
-    readonly property string image: props.img
+    // A picture that fails to load counts as none (see Notification.qml).
+    property bool imageFailed
+    readonly property string image: imageFailed ? "" : props.img
     readonly property string appIcon: props.icon
     readonly property string urgency: props.urgency
 
@@ -81,25 +83,20 @@ StyledRect {
                     asynchronous: true
                     width: TokenConfig.sizes.notifs.image
                     height: TokenConfig.sizes.notifs.image
+                    onStatusChanged: {
+                        if (status === Image.Error)
+                            root.imageFailed = true;
+                    }
                 }
             }
 
             Component {
                 id: appIconComp
 
-                IconImage {
+                NotifAppIcon {
                     implicitSize: Math.round(TokenConfig.sizes.notifs.image * 0.6)
-                    source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
-                }
-            }
-
-            Component {
-                id: materialIconComp
-
-                MaterialIcon {
-                    text: Icons.getNotifIcon(root.notifs[0]?.summary, root.urgency)
-                    color: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                    fontStyle: Tokens.font.icon.large
+                    icon: root.appIcon
+                    colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                 }
             }
 
@@ -111,7 +108,7 @@ StyledRect {
                 Loader {
                     asynchronous: true
                     anchors.centerIn: parent
-                    sourceComponent: root.image ? imageComp : root.appIcon ? appIconComp : materialIconComp
+                    sourceComponent: root.image ? imageComp : appIconComp
                 }
             }
 
@@ -128,10 +125,11 @@ StyledRect {
                     color: root.urgency === "critical" ? Colours.palette.m3error : root.urgency === "low" ? Colours.palette.m3surfaceContainerHighest : Colours.palette.m3secondaryContainer
                     radius: Tokens.rounding.full
 
-                    IconImage {
+                    NotifAppIcon {
                         anchors.centerIn: parent
                         implicitSize: Math.round(Tokens.sizes.notifs.badge * 0.6)
-                        source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
+                        icon: root.appIcon
+                        colour: root.urgency === "critical" ? Colours.palette.m3onError : root.urgency === "low" ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     }
                 }
             }

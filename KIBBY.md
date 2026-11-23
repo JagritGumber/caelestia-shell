@@ -13,7 +13,7 @@ This is a fork of [caelestia-dots/shell](https://github.com/caelestia-dots/shell
 - **Tray menus:** they stay open while the pointer travels to them, and are named by tray item rather than position.
 - **Lock keys:** Caps and Num Lock are read from the laptop keyboard when keyd sits in front of it.
 - **System alerts:** memory and battery alerts, shown even over fullscreen windows.
-- **Notifications:** app icons, tidier groups, and an alert sound for chosen apps.
+- **Notifications:** app icons, tidier groups, and an alert sound for chosen apps. A notification with no usable icon of its own shows the distro logo the bar uses, never a broken image.
 - **Profile picture:** a cropper for it in the dashboard.
 - **Launcher:** theme icons for apps, and a wallpapers shortcut that opens the wallpaper carousel.
 - **Recording:** region recording hands the pointer to slurp, and runs through Kibby's `caelestia-recorder`.

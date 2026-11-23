@@ -22,7 +22,9 @@ StyledRect {
     readonly property list<var> notifs: Notifs.list.filter(n => n.appName === modelData)
     readonly property list<var> activeNotifs: notifs.filter(n => !n.closed)
     readonly property int notifCount: activeNotifs.length
-    readonly property string image: activeNotifs.find(n => n.image.length > 0 && !n.image.startsWith("image://icon/"))?.image ?? ""
+    // A picture that fails to load counts as none (see Notification.qml).
+    property bool imageFailed
+    readonly property string image: imageFailed ? "" : activeNotifs.find(n => n.image.length > 0 && !n.image.startsWith("image://icon/"))?.image ?? ""
     readonly property string appIcon: activeNotifs.find(n => n.resolvedAppIcon.length > 0)?.resolvedAppIcon ?? ""
     readonly property int urgency: {
         if (activeNotifs.find(n => n.urgency === NotificationUrgency.Critical))
@@ -96,22 +98,18 @@ StyledRect {
                     cache: false
                     asynchronous: true
                     visible: root.image.length > 0
+                    onStatusChanged: {
+                        if (status === Image.Error)
+                            root.imageFailed = true;
+                    }
                 }
 
-                IconImage {
+                NotifAppIcon {
                     anchors.centerIn: parent
                     implicitSize: Math.round(TokenConfig.sizes.notifs.image * 0.6)
-                    source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
-                    visible: !root.image && root.appIcon
-                }
-
-                MaterialIcon {
-                    anchors.centerIn: parent
-                    anchors.verticalCenterOffset: 1
-                    text: Icons.getNotifIcon(root.activeNotifs[0]?.summary, root.urgency)
-                    color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                    fontStyle: Tokens.font.icon.medium
-                    visible: !root.image && !root.appIcon
+                    icon: root.appIcon
+                    colour: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
+                    visible: !root.image
                 }
             }
 
@@ -128,10 +126,11 @@ StyledRect {
                     color: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3error : root.urgency === NotificationUrgency.Low ? Colours.palette.m3surfaceContainerHigh : Colours.palette.m3secondaryContainer
                     radius: Tokens.rounding.full
 
-                    IconImage {
+                    NotifAppIcon {
                         anchors.centerIn: parent
                         implicitSize: Math.round(Tokens.sizes.notifs.badge * 0.6)
-                        source: root.appIcon.startsWith("file:") ? root.appIcon : Quickshell.iconPath(root.appIcon)
+                        icon: root.appIcon
+                        colour: root.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     }
                 }
             }

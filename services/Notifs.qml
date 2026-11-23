@@ -55,15 +55,44 @@ Singleton {
             grokSound.running = true;
     }
 
-    function resolveAppIcon(appName: string, suppliedIcon: string): string {
+    // The icon a notification shows beside (or instead of) its picture: a
+    // theme icon name or a file URL, or "" for none. Only icons that exist are
+    // returned: a theme name that does not resolve would reach an IconImage as
+    // Qt's magenta and black checkerboard. With "" the views show the distro
+    // logo the bar uses (NotifAppIcon, SysInfo.osLogo).
+    // Tried in order: the notification's own app_icon, an image-path hint that
+    // names a theme icon, the app's desktop entry, then the app name itself.
+    function resolveAppIcon(appName: string, suppliedIcon: string, image: string): string {
         const iconOverrides = {
             "slack": "file:///usr/share/pixmaps/slack.png",
             "grok-bot": `file://${Paths.home}/.local/share/icons/hicolor/512x512/apps/grok-bot.png`,
             "orca-ide": `file://${Paths.home}/.local/share/icons/hicolor/512x512/apps/orca-ide.png`,
             "fish": `file://${Paths.home}/.local/share/icons/Colloid-Pink-Catppuccin-Light/apps/scalable/fish.svg`
         };
-        if (suppliedIcon)
-            return iconOverrides[suppliedIcon] ?? suppliedIcon;
+        const usable = icon => {
+            if (!icon)
+                return "";
+            if (iconOverrides[icon])
+                return iconOverrides[icon];
+            // Files are kept as file URLs; one that fails to load falls back
+            // to the logo in the view.
+            if (icon.startsWith("/"))
+                return `file://${icon}`;
+            if (icon.startsWith("file:"))
+                return icon;
+            // iconPath(name, true) is "" when the theme has no such icon.
+            return Quickshell.iconPath(icon, true) ? icon : "";
+        };
+
+        const supplied = usable(suppliedIcon);
+        if (supplied)
+            return supplied;
+
+        if (image?.startsWith("image://icon/")) {
+            const named = usable(decodeURIComponent(image.slice("image://icon/".length).split("?")[0]));
+            if (named)
+                return named;
+        }
 
         const needle = appName.trim().toLowerCase();
         if (!needle)
@@ -75,13 +104,11 @@ Singleton {
             const startupClass = String(app.startupClass ?? "").trim().toLowerCase();
             return needle === id || needle === name || needle === startupClass;
         });
-        if (entry?.icon)
-            return iconOverrides[entry.icon] ?? entry.icon;
+        const fromEntry = usable(entry?.icon ?? "");
+        if (fromEntry)
+            return fromEntry;
 
-        const themedIcon = needle.replace(/\s+/g, "-");
-        if (iconOverrides[themedIcon])
-            return iconOverrides[themedIcon];
-        return Quickshell.iconPath(themedIcon, "") ? themedIcon : "";
+        return usable(needle.replace(/\s+/g, "-"));
     }
 
     onDndChanged: {

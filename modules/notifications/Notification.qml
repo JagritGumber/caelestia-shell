@@ -17,7 +17,10 @@ StyledRect {
     id: root
 
     required property NotifData modelData
-    readonly property bool hasImage: modelData.image.length > 0 && !modelData.image.startsWith("image://icon/")
+    // A picture that fails to load counts as none, so the icon (or the distro
+    // logo) shows instead of an empty circle.
+    property bool imageFailed
+    readonly property bool hasImage: modelData.image.length > 0 && !modelData.image.startsWith("image://icon/") && !imageFailed
     readonly property bool hasAppIcon: modelData.resolvedAppIcon.length > 0
     readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData.body) ? Text.MarkdownText : Text.PlainText
     readonly property int nonAnimHeight: summary.implicitHeight + (root.expanded ? Tokens.spacing.extraSmall * 2 + appName.height + body.height + actions.height + actions.anchors.topMargin : bodyPreview.height) + inner.anchors.margins * 2
@@ -132,6 +135,10 @@ StyledRect {
                         }
                         cache: false
                         asynchronous: true
+                        onStatusChanged: {
+                            if (status === Image.Error)
+                                root.imageFailed = true;
+                        }
                     }
                 }
             }
@@ -153,21 +160,11 @@ StyledRect {
                     implicitWidth: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
                     implicitHeight: root.hasImage ? Tokens.sizes.notifs.badge : TokenConfig.sizes.notifs.image
 
-                    IconImage {
+                    NotifAppIcon {
                         anchors.centerIn: parent
-                        width: Math.round(parent.width * 0.6)
-                        height: Math.round(parent.width * 0.6)
-                        source: root.modelData.resolvedAppIcon.startsWith("file:") ? root.modelData.resolvedAppIcon : Quickshell.iconPath(root.modelData.resolvedAppIcon)
-                        visible: root.hasAppIcon
-                    }
-
-                    MaterialIcon {
-                        anchors.centerIn: parent
-                        anchors.verticalCenterOffset: 1
-                        text: Icons.getNotifIcon(root.modelData.summary, root.modelData.urgency)
-                        color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
-                        fontStyle: Tokens.font.icon.medium
-                        visible: !root.hasAppIcon
+                        implicitSize: Math.round(parent.width * 0.6)
+                        icon: root.modelData.resolvedAppIcon
+                        colour: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onError : root.modelData.urgency === NotificationUrgency.Low ? Colours.palette.m3onSurface : Colours.palette.m3onSecondaryContainer
                     }
                 }
             }

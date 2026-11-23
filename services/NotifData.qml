@@ -48,7 +48,7 @@ QtObject {
     property string body
     property string appIcon
     property string appName
-    readonly property string resolvedAppIcon: Notifs.resolveAppIcon(appName, appIcon)
+    readonly property string resolvedAppIcon: Notifs.resolveAppIcon(appName, appIcon, image)
     property string image
     property var hints // Hints are not persisted across restarts
     property real expireTimeout: GlobalConfig.notifs.defaultExpireTimeout
