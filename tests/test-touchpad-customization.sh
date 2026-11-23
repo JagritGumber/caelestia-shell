@@ -41,6 +41,8 @@ rg -Fq 'path: `${Quickshell.env("XDG_RUNTIME_DIR")}/kibby/touchpad-state`' "$roo
 rg -Fq 'watchChanges: true' "$root/services/Hypr.qml" || fail "touchpad state is not watched"
 rg -Fq 'onFileChanged: reload()' "$root/services/Hypr.qml" || fail "touchpad state does not reload"
 rg -Fq '&& Hypr.touchpadEnabled' "$root/modules/bar/components/StatusIcons.qml" || fail "status container ignores touchpad state"
+rg -Fq 'implicitWidth: present ? (item?.implicitWidth ?? 0) : 0' "$root/modules/bar/components/StatusIcons.qml" || fail "collapsed status entry still reserves its width"
+rg -Fq 'implicitHeight: present ? (item?.implicitHeight ?? 0) : 0' "$root/modules/bar/components/StatusIcons.qml" || fail "collapsed status entry still reserves its height"
 rg -Fq 'text: "mouse"' "$root/modules/bar/components/status/LockStatus.qml" || fail "persistent touchpad icon is absent"
 if rg -Fq 'touchpad_off' "$root/scripts/kibby-touchpad-state" "$root/modules/bar/components/status/LockStatus.qml"; then
     fail "unsupported touchpad_off glyph is still used"

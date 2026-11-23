@@ -34,6 +34,9 @@ StyledRect {
         if (root.lock.unlocking)
             return;
 
+        if (event.key === Qt.Key_NumLock || event.key === Qt.Key_CapsLock)
+            Hypr.extras.refreshDevices();
+
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return)
             inputField.placeholder.animate = false;
 

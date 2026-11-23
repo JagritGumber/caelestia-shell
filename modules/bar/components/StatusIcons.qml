@@ -156,12 +156,14 @@ StyledRect {
         default property Item item
         property string name: modelData.id.toLowerCase()
 
-        Layout.topMargin: Math.round(topGap)
-        Layout.bottomMargin: Math.round(bottomGap)
+        Layout.topMargin: present ? Math.round(topGap) : 0
+        Layout.bottomMargin: present ? Math.round(bottomGap) : 0
+        Layout.preferredHeight: implicitHeight
+        Layout.minimumHeight: 0
         Layout.alignment: Qt.AlignHCenter
 
-        implicitWidth: item?.implicitWidth ?? 0
-        implicitHeight: item?.implicitHeight ?? 0
+        implicitWidth: present ? (item?.implicitWidth ?? 0) : 0
+        implicitHeight: present ? (item?.implicitHeight ?? 0) : 0
 
         children: item
 

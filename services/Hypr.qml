@@ -25,8 +25,17 @@ Singleton {
     readonly property int activeWsId: focusedWorkspace?.id ?? 1
 
     readonly property HyprKeyboard keyboard: extras.devices.keyboards.find(kb => kb.main) ?? null
-    readonly property bool capsLock: keyboard?.capsLock ?? false
-    readonly property bool numLock: keyboard?.numLock ?? false
+    // keyd is Hyprland's "main" keyboard. Caps/Num live on the laptop board;
+    // sysfs LEDs on virtual devices also flicker when Right Ctrl is held.
+    readonly property var lockKeyboard: extras.devices.keyboards.find(kb => (kb.name || "").toLowerCase().includes("at-translated")) ?? null
+    // keyd grabs the laptop board, so Caps/Num show up on the virtual main
+    // keyboard. OR both; ignore ydotool/wispr LEDs.
+    readonly property bool capsLock: (lockKeyboard?.capsLock ?? false) || (keyboard?.capsLock ?? false)
+    readonly property bool numLock: (lockKeyboard?.numLock ?? false) || (keyboard?.numLock ?? false)
+
+    function refreshLockLeds(): void {
+        extras.refreshDevices();
+    }
     property bool touchpadEnabled: true
     readonly property string defaultKbLayout: keyboard?.layout.split(",")[0] ?? "??"
     readonly property string kbLayoutFull: keyboard?.activeKeymap ?? Tr.trCtx("Unknown", "keyboard layout")
@@ -158,6 +167,14 @@ Singleton {
         }
 
         target: root.focusedMonitor
+    }
+
+    Timer {
+        interval: 400
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: extras.refreshDevices()
     }
 
     FileView {

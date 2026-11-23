@@ -9,46 +9,47 @@ ColumnLayout {
     required property color colour
     required property int parentSpacing
 
-    property real capsHeight: Hypr.capsLock ? capslockIcon.implicitHeight : 0
-    property real numHeight: Hypr.numLock ? numlockIcon.implicitHeight : 0
-    property real touchpadHeight: !Hypr.touchpadEnabled ? touchpadIcon.implicitHeight : 0
-    property real numGap: Hypr.numLock && Hypr.capsLock ? parentSpacing : 0
-    property real touchpadGap: !Hypr.touchpadEnabled && (Hypr.capsLock || Hypr.numLock) ? parentSpacing : 0
+    // Fold inter-icon gaps into each row's height. Animating Layout.topMargin
+    // on a collapsing row is left behind by ColumnLayout (empty hole after
+    // unlocking the touchpad while Num Lock is still on).
+    property real capsRowHeight: Hypr.capsLock ? capslockIcon.implicitHeight : 0
+    property real numRowHeight: (Hypr.numLock ? numlockIcon.implicitHeight : 0) + (Hypr.numLock && Hypr.capsLock ? parentSpacing : 0)
+    property real touchpadRowHeight: (!Hypr.touchpadEnabled ? touchpadIcon.implicitHeight : 0) + (!Hypr.touchpadEnabled && (Hypr.capsLock || Hypr.numLock) ? parentSpacing : 0)
 
     spacing: 0
 
-    Behavior on numGap {
+    Behavior on capsRowHeight {
         Anim {
             type: Anim.SlowEffects
         }
     }
 
-    Behavior on touchpadGap {
+    Behavior on numRowHeight {
         Anim {
             type: Anim.SlowEffects
         }
     }
 
-    Behavior on capsHeight {
-        Anim {
-            type: Anim.SlowEffects
-        }
-    }
-
-    Behavior on numHeight {
+    Behavior on touchpadRowHeight {
         Anim {
             type: Anim.SlowEffects
         }
     }
 
     Item {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredHeight: Math.round(root.capsRowHeight)
+        Layout.minimumHeight: 0
         implicitWidth: capslockIcon.implicitWidth
-        implicitHeight: Math.round(root.capsHeight)
+        implicitHeight: Math.round(root.capsRowHeight)
+        clip: true
+        visible: root.capsRowHeight > 0
 
         MaterialIcon {
             id: capslockIcon
 
-            anchors.centerIn: parent
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
 
             scale: Hypr.capsLock ? 1 : 0.5
             opacity: Hypr.capsLock ? 1 : 0
@@ -71,14 +72,19 @@ ColumnLayout {
     }
 
     Item {
-        Layout.topMargin: Math.round(root.numGap)
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredHeight: Math.round(root.numRowHeight)
+        Layout.minimumHeight: 0
         implicitWidth: numlockIcon.implicitWidth
-        implicitHeight: Math.round(root.numHeight)
+        implicitHeight: Math.round(root.numRowHeight)
+        clip: true
+        visible: root.numRowHeight > 0
 
         MaterialIcon {
             id: numlockIcon
 
-            anchors.centerIn: parent
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
 
             scale: Hypr.numLock ? 1 : 0.5
             opacity: Hypr.numLock ? 1 : 0
@@ -101,14 +107,19 @@ ColumnLayout {
     }
 
     Item {
-        Layout.topMargin: Math.round(root.touchpadGap)
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredHeight: Math.round(root.touchpadRowHeight)
+        Layout.minimumHeight: 0
         implicitWidth: touchpadIcon.implicitWidth
-        implicitHeight: Math.round(root.touchpadHeight)
+        implicitHeight: Math.round(root.touchpadRowHeight)
+        clip: true
+        visible: root.touchpadRowHeight > 0
 
         MaterialIcon {
             id: touchpadIcon
 
-            anchors.centerIn: parent
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
 
             scale: !Hypr.touchpadEnabled ? 1 : 0.5
             opacity: !Hypr.touchpadEnabled ? 1 : 0
