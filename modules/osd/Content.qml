@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Services.Pipewire
 import Caelestia
 import Caelestia.Config
@@ -23,9 +24,10 @@ Item {
     required property real brightness
 
     // The per-app mixer beside the volume ("output") or microphone ("input")
-    // pill, only on demand: hovering that pill for 400 ms, right-clicking it,
-    // or the osd IPC target. It closes with the OSD, 400 ms after the pointer
-    // leaves, or after 4 s if the pointer never comes; never on a volume change.
+    // pill, only on demand: resting the pointer on that pill for 400 ms (the mic
+    // pill only while an app is recording), right-clicking it, or the osd IPC
+    // target. It closes with the OSD, 400 ms after the pointer leaves, or after
+    // 4 s if the pointer never comes; never on a volume change.
     readonly property string mixer: screenState.osdMixer
     property string shownMixer
     property real mixerProgress: mixer ? 1 : 0
@@ -34,12 +36,23 @@ Item {
     // so beside the volume pill the OSD grows upwards by the chip's height.
     readonly property real mixerTop: (shownMixer === "input" ? micLoader.y : volumePill.y) - ((mixerLoader.item as MixerColumn)?.pillsTop ?? 0)
     readonly property real mixerOverflow: Math.max(0, -mixerTop) * mixerProgress
+    // Apps making sound now, by their stream's media class: playing
+    // (Stream/Output/Audio) or recording (Stream/Input/Audio). Their stream is
+    // not corked (paused), and the shell's own streams (level meters, monitors)
+    // are not apps.
+    readonly property list<PwNode> playingApps: Audio.streams.filter(s => isApp(s, "Stream/Output/Audio"))
+    readonly property list<PwNode> recordingApps: Audio.streams.filter(s => isApp(s, "Stream/Input/Audio"))
     readonly property real centreOffset: CUtils.clamp(Tokens.padding.large - Config.border.thickness, 0, Tokens.padding.large) / 2
 
     // The microphone's level as a share of the -60..0 dB range.
     readonly property real micLevel: {
         const peak = micPeak.peak;
         return peak > 0 ? Math.max(0, Math.min(1, (20 * Math.log10(peak) + 60) / 60)) : 0;
+    }
+
+    function isApp(node: PwNode, mediaClass: string): bool {
+        const props = node?.properties ?? {};
+        return props["media.class"] === mediaClass && String(props["pulse.corked"]) !== "true" && props["stream.monitor"] !== "true" && String(props["application.process.id"] ?? "") !== String(Quickshell.processId);
     }
 
     function toggleMixer(kind: string): void {
@@ -127,6 +140,7 @@ Item {
 
             sourceComponent: MixerColumn {
                 input: root.shownMixer === "input"
+                streams: root.shownMixer === "input" ? root.recordingApps : root.playingApps
                 onInteracted: idleTimer.restart()
             }
         }
@@ -192,7 +206,10 @@ Item {
                 implicitWidth: Tokens.sizes.osd.sliderWidth
                 implicitHeight: Tokens.sizes.osd.sliderHeight
 
+                // Nothing recording: the column would be empty, and the
+                // pointer crosses this middle pill on its way into the OSD.
                 MixerHover {
+                    enabled: root.recordingApps.length > 0
                     screenState: root.screenState
                     kind: "input"
                 }

@@ -18,12 +18,8 @@ ColumnLayout {
     property bool input
     property bool showDevices
 
-    // Apps making sound now: their stream exists and is not corked (paused).
-    // The shell's own streams (level meters, monitors) are not apps.
-    readonly property list<PwNode> streams: Audio.streams.filter(s => {
-        const props = s?.properties ?? {};
-        return String(props["media.class"] ?? "").startsWith(input ? "Stream/Input" : "Stream/Output") && String(props["pulse.corked"]) !== "true" && props["stream.monitor"] !== "true" && String(props["application.process.id"] ?? "") !== String(Quickshell.processId);
-    })
+    // The apps playing (or recording) now; Content.qml picks them.
+    required property list<PwNode> streams
     readonly property PwNode device: input ? Audio.source : Audio.sink
     readonly property list<PwNode> devices: input ? Audio.sources : Audio.sinks
     readonly property real pillsTop: chipRect.implicitHeight + spacing
