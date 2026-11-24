@@ -44,12 +44,6 @@ Item {
     readonly property list<PwNode> recordingApps: Audio.streams.filter(s => isApp(s, "Stream/Input/Audio"))
     readonly property real centreOffset: CUtils.clamp(Tokens.padding.large - Config.border.thickness, 0, Tokens.padding.large) / 2
 
-    // The microphone's level as a share of the -60..0 dB range.
-    readonly property real micLevel: {
-        const peak = micPeak.peak;
-        return peak > 0 ? Math.max(0, Math.min(1, (20 * Math.log10(peak) + 60) / 60)) : 0;
-    }
-
     function isApp(node: PwNode, mediaClass: string): bool {
         const props = node?.properties ?? {};
         return props["media.class"] === mediaClass && String(props["pulse.corked"]) !== "true" && props["stream.monitor"] !== "true" && String(props["application.process.id"] ?? "") !== String(Quickshell.processId);
@@ -111,14 +105,6 @@ Item {
             if (!hover.hovered)
                 root.screenState.osd = false;
         }
-    }
-
-    PwNodePeakMonitor {
-        id: micPeak
-
-        node: Audio.source
-        // root.Config: Config needs an item to know its screen.
-        enabled: root.Config.osd.enableMicrophone && !!Audio.source && !root.sourceMuted
     }
 
     // The mixer, sliding out to the left of its pill.
@@ -226,26 +212,6 @@ Item {
                     value: root.sourceVolume
                     to: GlobalConfig.services.maxVolume
                     onMoved: Audio.setSourceVolume(value)
-
-                    // The microphone's live level: a thin bar inside the pill,
-                    // over the fill (z -1) and under the handle (z 0).
-                    StyledRect {
-                        z: -0.5
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: parent.width / 2
-                        implicitWidth: Tokens.padding.extraSmall
-                        implicitHeight: (parent.height - parent.width) * root.micLevel
-                        radius: Tokens.rounding.full
-                        color: root.micLevel > 0.95 ? Colours.palette.m3error : Colours.palette.m3onSecondary
-                        opacity: 0.85
-
-                        Behavior on implicitHeight {
-                            Anim {
-                                type: Anim.FastSpatial
-                            }
-                        }
-                    }
                 }
             }
         }
