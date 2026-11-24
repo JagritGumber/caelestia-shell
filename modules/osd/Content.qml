@@ -104,7 +104,8 @@ Item {
         id: micPeak
 
         node: Audio.source
-        enabled: Config.osd.enableMicrophone && !!Audio.source && !root.sourceMuted
+        // root.Config: Config needs an item to know its screen.
+        enabled: root.Config.osd.enableMicrophone && !!Audio.source && !root.sourceMuted
     }
 
     // The mixer, sliding out to the left of its pill.
