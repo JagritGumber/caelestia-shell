@@ -155,6 +155,7 @@ Item {
             implicitHeight: Tokens.sizes.osd.sliderHeight
 
             MixerHover {
+                screenState: root.screenState
                 kind: "output"
             }
 
@@ -191,6 +192,7 @@ Item {
                 implicitHeight: Tokens.sizes.osd.sliderHeight
 
                 MixerHover {
+                    screenState: root.screenState
                     kind: "input"
                 }
 
@@ -256,25 +258,6 @@ Item {
                     onMoved: root.monitor?.setBrightness(value)
                 }
             }
-        }
-    }
-
-    // Hovering a pill for 400 ms opens its mixer. It sits on the pill itself:
-    // the slider inside takes hover, so nothing under it would get any.
-    component MixerHover: HoverHandler {
-        id: mixerHover
-
-        required property string kind
-        readonly property Timer delay: Timer {
-            interval: 400
-            onTriggered: root.screenState.osdMixer = mixerHover.kind
-        }
-
-        onHoveredChanged: {
-            if (hovered)
-                delay.restart();
-            else
-                delay.stop();
         }
     }
 
