@@ -46,6 +46,9 @@ ColumnLayout {
         id: chipRect
 
         Layout.fillWidth: true
+        // Its own width, so the column is never narrower than the chip (one
+        // app pill, or none, is narrower than the icon and the arrow).
+        implicitWidth: chip.implicitWidth + Tokens.padding.small * 2
         implicitHeight: chip.implicitHeight + Tokens.padding.small * 2
         radius: Tokens.rounding.full
         color: root.showDevices ? Colours.palette.m3secondaryContainer : Colours.layer(Colours.palette.m3surfaceContainer, 2)
