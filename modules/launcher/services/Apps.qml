@@ -10,6 +10,36 @@ Searcher {
 
     property var resolvedIcons: ({})
 
+    // On every rescan of the applications folders (any file added, removed or
+    // renamed there or in a parent such as ~ or ~/.local/share), Quickshell
+    // builds a new DesktopEntry for each id that a ~/.local/share/applications
+    // file overrides, and AppDb then drops that app until its 300 ms timer adds
+    // it back. VS Code, Helium and Wispr Flow left the launcher that way several
+    // times a minute. Until AppDb has it again, such an app is listed through
+    // its DesktopEntry, in the place it had.
+    property list<string> lastOrder: []
+
+    readonly property var steadyApps: {
+        const apps = appDb.apps.filter(a => a.entry);
+        const listed = new Set(apps.map(a => a.id));
+        const gaps = appDb.entries.filter(e => !listed.has(e.id));
+        if (gaps.length === 0)
+            return apps;
+
+        const out = [...apps];
+        for (const entry of gaps) {
+            // Before the first app that followed it last time and is still listed.
+            const was = lastOrder.indexOf(entry.id);
+            const next = was < 0 ? -1 : lastOrder.slice(was + 1).findIndex(id => listed.has(id));
+            const before = next < 0 ? -1 : out.findIndex(a => a.id === lastOrder[was + 1 + next]);
+            if (before < 0)
+                out.push(entry);
+            else
+                out.splice(before, 0, entry);
+        }
+        return out;
+    }
+
     function resolvedIcon(name: string): string {
         return resolvedIcons[name] ?? "";
     }
@@ -64,10 +94,10 @@ Searcher {
             weights = [1];
 
             if (!search.startsWith(`${prefix}t `))
-                return query(search).map(e => e.entry);
+                return query(search).map(e => e.entry ?? e);
         }
 
-        const results = query(search.slice(prefix.length + 2)).map(e => e.entry);
+        const results = query(search.slice(prefix.length + 2)).map(e => e.entry ?? e);
         if (search.startsWith(`${prefix}t `))
             return results.filter(a => a.runInTerminal);
         return results;
@@ -77,8 +107,12 @@ Searcher {
         return keys.map(k => item[k]).join(" ");
     }
 
-    list: appDb.apps
+    list: steadyApps
     useFuzzy: GlobalConfig.launcher.useFuzzy.apps
+    onSteadyAppsChanged: {
+        if (steadyApps.every(a => a.entry))
+            lastOrder = steadyApps.map(a => a.id);
+    }
 
     AppDb {
         id: appDb
