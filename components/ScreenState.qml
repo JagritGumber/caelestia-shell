@@ -11,6 +11,7 @@ PersistentProperties {
     property bool dashboard
     property bool utilities
     property bool sidebar
+    property bool notifDock // the notification dock's bar is up (modules/notifdock)
 
     // Dashboard state
     property int dashboardTab

@@ -6,6 +6,7 @@ import qs.modules.bar as Bar
 import qs.modules.dashboard as Dashboard
 import qs.modules.launcher as Launcher
 import qs.modules.notifications as Notifications
+import qs.modules.notifdock as NotifDock
 import qs.modules.osd as Osd
 import qs.modules.session as Session
 import qs.modules.sidebar as Sidebar
@@ -24,6 +25,7 @@ Item {
     readonly property alias osd: osd
     readonly property alias osdWrapper: osdWrapper
     readonly property alias notifications: notifications
+    readonly property alias notifDock: notifDock
     readonly property alias session: session
     readonly property alias sessionWrapper: sessionWrapper
     readonly property alias launcher: launcher
@@ -104,6 +106,15 @@ Item {
         panels: root
 
         anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+    }
+
+    NotifDock.Wrapper {
+        id: notifDock
+
+        screen: root.screen
+        screenState: root.screenState
+
         anchors.bottom: parent.bottom
     }
 

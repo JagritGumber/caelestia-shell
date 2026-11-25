@@ -65,13 +65,19 @@ StyledWindow {
         screenState.launcher = false;
         screenState.session = false;
         screenState.dashboard = false;
+        screenState.notifDock = false;
         panels.popouts.close();
     }
 
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: (fsTransitionProg > 0 && (contentItem.Config.general.showOverFullscreen || hasImportantToast)) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    // Also on the overlay layer while the notification dock is open over
+    // Wispr Flow's bars (its own overlay layer, which takes no input), so
+    // the dock's panel draws above them.
+    WlrLayershell.layer: (fsTransitionProg > 0 && (contentItem.Config.general.showOverFullscreen || hasImportantToast)) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) || (screenState.notifDock && NotifDockState.bottomEdgeBusy) ? WlrLayer.Overlay : WlrLayer.Top
+    // The dock's deck: keys (← later, → read) once you click it; revealing
+    // it never takes the keyboard. A reply being typed takes it outright.
+    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session ? WlrKeyboardFocus.OnDemand : screenState.notifDock && NotifDockState.typing ? WlrKeyboardFocus.Exclusive : screenState.notifDock ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     mask: hasFullscreen ? emptyRegion : regions
 
@@ -192,6 +198,13 @@ StyledWindow {
         }
 
         PanelBg {
+            id: notifDockBg
+
+            panel: panels.notifDock
+            deformAmount: 0.1
+        }
+
+        PanelBg {
             id: sessionBg
 
             panel: panels.sessionWrapper
@@ -279,6 +292,10 @@ StyledWindow {
             launcher.transform: Matrix4x4 {
                 matrix: launcherBg.deformMatrix
             }
+            notifDock.transform: Matrix4x4 {
+                matrix: notifDockBg.deformMatrix
+            }
+            notifDock.fullscreen: root.hasFullscreen
             session.transform: Matrix4x4 {
                 matrix: sessionBg.deformMatrix
             }

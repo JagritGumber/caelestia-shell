@@ -108,6 +108,16 @@ CustomMouseArea {
         return x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panel.x) && withinPanelHeight(panel, x, y);
     }
 
+    // The dock's whole panel when revealed, with the border under it: its
+    // target geometry (Wrapper's panelLeft/Right/Height), not its animation,
+    // and the bar's rounding as margin, as for the dashboard.
+    function inDock(x: real, y: real): bool {
+        const dock = panels.notifDock;
+        const left = bar.implicitWidth + dock.panelLeft - Config.border.rounding;
+        const right = bar.implicitWidth + dock.panelRight + Config.border.rounding;
+        return x >= left && x <= right && y >= height - borderThickness - dock.panelHeight - Config.border.rounding;
+    }
+
     function inTopPanel(panel: Item, x: real, y: real): bool {
         const panelHeight = panel.height * (1 - (panel.offsetScale ?? 0)); // qmllint disable missing-property
         return y < Math.max(Config.border.minThickness, Config.border.thickness + panelHeight) && withinPanelWidth(panel, x, y);
@@ -161,6 +171,9 @@ CustomMouseArea {
             return;
         }
 
+        panels.notifDock.pointerInPanel = false;
+        panels.notifDock.pointerAtEdge = false;
+
         // Only hide if not activated by shortcut
         if (!osdShortcutActive) {
             screenState.osd = false;
@@ -202,6 +215,15 @@ CustomMouseArea {
             root.panels.osd.hovered = inRightPanel(panels.osdWrapper, x, y);
             return;
         }
+
+        // The notification dock: the bottom edge along its span brings up
+        // its panel after a short rest there (modules/notifdock/Wrapper.qml).
+        // Leaving its panel closes it at once, as leaving the dashboard does
+        // (Wrapper.pointerInPanel); set first, so crossing between the
+        // panel and the edge never looks like leaving.
+        const dock = panels.notifDock;
+        dock.pointerInPanel = inDock(x, y);
+        dock.pointerAtEdge = y >= height - Math.max(Config.border.minThickness, borderThickness) && x >= bar.implicitWidth + dock.zoneLeft && x <= bar.implicitWidth + dock.zoneRight;
 
         // Show bar in non-exclusive mode on hover
         if (!screenState.bar && Config.bar.showOnHover && x < bar.clampedWidth)
