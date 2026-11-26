@@ -32,10 +32,20 @@ Item {
     property string shownMixer
     property real mixerProgress: mixer ? 1 : 0
     property bool mixerHovered
-    // The app pills line up with their pill; the device chip sits above them,
-    // so beside the volume pill the OSD grows upwards by the chip's height.
-    readonly property real mixerTop: (shownMixer === "input" ? micLoader.y : volumePill.y) - ((mixerLoader.item as MixerColumn)?.pillsTop ?? 0)
-    readonly property real mixerOverflow: Math.max(0, -mixerTop) * mixerProgress
+    // The app pills line up with their pill, and the device chip takes the
+    // room beside a neighbouring pill: over the volume pill's apps (beside the
+    // mic pill), under the mic pill's (beside the volume pill). So a mixer, and
+    // apps coming and going in it, only widen the OSD to the left: its height,
+    // its centre and its own pills stay where they are. The OSD grows taller
+    // only when the chip has no pill beside it (the mic pill turned off, say).
+    readonly property Item mixerPill: shownMixer === "input" ? micLoader : volumePill
+    readonly property bool mixerChipBelow: shownMixer === "input" || !micLoader.shouldBeActive
+    readonly property real mixerTop: mixerPill.y - ((mixerLoader.item as MixerColumn)?.pillsTop ?? 0)
+    readonly property real mixerOverflowTop: Math.max(0, -mixerTop) * mixerProgress
+    readonly property real mixerOverflowBottom: Math.max(0, mixerTop + mixerLoader.implicitHeight - layout.implicitHeight) * mixerProgress
+    // The mixer's width, eased while it is open: an app starting or stopping
+    // widens or narrows the OSD smoothly instead of in one jump.
+    property real mixerWidth: mixerLoader.implicitWidth
     // Apps making sound now, by their stream's media class: playing
     // (Stream/Output/Audio) or recording (Stream/Input/Audio). Their stream is
     // not corked (paused), and the shell's own streams (level meters, monitors)
@@ -60,10 +70,19 @@ Item {
         idleTimer.restart();
     }
 
-    implicitWidth: layout.implicitWidth + Tokens.padding.large + centreOffset * 2 + (mixerLoader.implicitWidth + Tokens.spacing.medium) * mixerProgress
-    implicitHeight: Tokens.padding.large * 2 + mixerOverflow + Math.max(layout.implicitHeight, (mixerTop + mixerLoader.implicitHeight) * mixerProgress)
+    implicitWidth: layout.implicitWidth + Tokens.padding.large + centreOffset * 2 + (mixerWidth + Tokens.spacing.medium) * mixerProgress
+    implicitHeight: Tokens.padding.large * 2 + layout.implicitHeight + mixerOverflowTop + mixerOverflowBottom
 
     Behavior on mixerProgress {
+        Anim {
+            type: Anim.Emphasized
+        }
+    }
+
+    // Opening and closing already ease through mixerProgress.
+    Behavior on mixerWidth {
+        enabled: root.mixerProgress >= 1
+
         Anim {
             type: Anim.Emphasized
         }
@@ -112,7 +131,7 @@ Item {
         anchors.right: layout.left
         anchors.rightMargin: Tokens.spacing.medium * root.mixerProgress
         y: layout.y + root.mixerTop
-        implicitWidth: mixerLoader.implicitWidth * root.mixerProgress
+        implicitWidth: root.mixerWidth * root.mixerProgress
         implicitHeight: mixerLoader.implicitHeight
         clip: true
         visible: root.mixerProgress > 0
@@ -122,10 +141,12 @@ Item {
             id: mixerLoader
 
             anchors.right: parent.right
+            width: root.mixerWidth
             active: !!root.mixer || root.mixerProgress > 0
 
             sourceComponent: MixerColumn {
                 input: root.shownMixer === "input"
+                chipBelow: root.mixerChipBelow
                 streams: root.shownMixer === "input" ? root.recordingApps : root.playingApps
                 onInteracted: idleTimer.restart()
             }
@@ -138,8 +159,51 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: Tokens.padding.large / 2
-        anchors.topMargin: Tokens.padding.large + root.mixerOverflow
+        anchors.topMargin: Tokens.padding.large + root.mixerOverflowTop
         spacing: Tokens.spacing.medium
+
+        // Top to bottom: microphone, speaker volume (in the centre, so its
+        // mixer has room over and under it), brightness.
+
+        // Microphone volume
+        WrappedLoader {
+            id: micLoader
+
+            shouldBeActive: Config.osd.enableMicrophone && (!Config.osd.enableBrightness || !root.screenState.session)
+
+            sourceComponent: CustomMouseArea {
+                function onWheel(event: WheelEvent) {
+                    if (event.angleDelta.y > 0)
+                        Audio.incrementSourceVolume();
+                    else if (event.angleDelta.y < 0)
+                        Audio.decrementSourceVolume();
+                }
+
+                implicitWidth: Tokens.sizes.osd.sliderWidth
+                implicitHeight: Tokens.sizes.osd.sliderHeight
+
+                // Nothing recording: the column would be empty.
+                MixerHover {
+                    enabled: root.recordingApps.length > 0
+                    screenState: root.screenState
+                    kind: "input"
+                }
+
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: root.toggleMixer("input")
+                }
+
+                FilledSlider {
+                    anchors.fill: parent
+
+                    icon: Icons.getMicVolumeIcon(value, root.sourceMuted)
+                    value: root.sourceVolume
+                    to: GlobalConfig.services.maxVolume
+                    onMoved: Audio.setSourceVolume(value)
+                }
+            }
+        }
 
         // Speaker volume
         CustomMouseArea {
@@ -172,47 +236,6 @@ Item {
                 value: root.volume
                 to: GlobalConfig.services.maxVolume
                 onMoved: Audio.setVolume(value)
-            }
-        }
-
-        // Microphone volume
-        WrappedLoader {
-            id: micLoader
-
-            shouldBeActive: Config.osd.enableMicrophone && (!Config.osd.enableBrightness || !root.screenState.session)
-
-            sourceComponent: CustomMouseArea {
-                function onWheel(event: WheelEvent) {
-                    if (event.angleDelta.y > 0)
-                        Audio.incrementSourceVolume();
-                    else if (event.angleDelta.y < 0)
-                        Audio.decrementSourceVolume();
-                }
-
-                implicitWidth: Tokens.sizes.osd.sliderWidth
-                implicitHeight: Tokens.sizes.osd.sliderHeight
-
-                // Nothing recording: the column would be empty, and the
-                // pointer crosses this middle pill on its way into the OSD.
-                MixerHover {
-                    enabled: root.recordingApps.length > 0
-                    screenState: root.screenState
-                    kind: "input"
-                }
-
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: root.toggleMixer("input")
-                }
-
-                FilledSlider {
-                    anchors.fill: parent
-
-                    icon: Icons.getMicVolumeIcon(value, root.sourceMuted)
-                    value: root.sourceVolume
-                    to: GlobalConfig.services.maxVolume
-                    onMoved: Audio.setSourceVolume(value)
-                }
             }
         }
 
